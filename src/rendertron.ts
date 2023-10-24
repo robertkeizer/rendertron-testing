@@ -150,10 +150,25 @@ export class Rendertron {
 
     const mobileVersion = 'mobile' in ctx.query ? true : false;
 
+	let upstreamAgent = "";
+	try{
+		const _mangledUrl = new URL( ctx.request.url.replace(/^\/render\//, "") );
+		if( _mangledUrl && _mangledUrl.searchParams && _mangledUrl.searchParams.get("upstreamAgent") ){
+			const _val = _mangledUrl.searchParams.get("upstreamAgent");
+			if( _val && _val !== "" ){
+				upstreamAgent = _val;
+			}
+		}
+	}catch( err ){
+		console.log("Error in handling custom params..");
+		console.log( err );
+	}
+
     const serialized = await this.renderer.serialize(
       url,
       mobileVersion,
-      ctx.query.timezoneId
+      ctx.query.timezoneId,
+	upstreamAgent
     );
 
     for (const key in this.config.headers) {

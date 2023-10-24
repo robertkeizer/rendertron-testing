@@ -151,12 +151,21 @@ export class Rendertron {
     const mobileVersion = 'mobile' in ctx.query ? true : false;
 
 	let upstreamAgent = "";
+	let upstreamIp = "";
 	try{
 		const _mangledUrl = new URL( ctx.request.url.replace(/^\/render\//, "") );
+
 		if( _mangledUrl && _mangledUrl.searchParams && _mangledUrl.searchParams.get("upstreamAgent") ){
 			const _val = _mangledUrl.searchParams.get("upstreamAgent");
 			if( _val && _val !== "" ){
 				upstreamAgent = _val;
+			}
+		}
+
+		if( _mangledUrl && _mangledUrl.searchParams && _mangledUrl.searchParams.get("upstreamIp") ){
+			const _val = _mangledUrl.searchParams.get("upstreamIp");
+			if( _val && _val !== "" ){
+				upstreamIp = _val;
 			}
 		}
 	}catch( err ){
@@ -168,7 +177,8 @@ export class Rendertron {
       url,
       mobileVersion,
       ctx.query.timezoneId,
-	upstreamAgent
+	upstreamAgent,
+	upstreamIp
     );
 
     for (const key in this.config.headers) {
@@ -176,7 +186,7 @@ export class Rendertron {
     }
 
     // Mark the response as coming from Rendertron.
-    ctx.set('x-renderer', 'rendertron');
+    //ctx.set('x-renderer', 'rendertron');
     // Add custom headers to the response like 'Location'
     serialized.customHeaders.forEach((value: string, key: string) =>
       ctx.set(key, value)

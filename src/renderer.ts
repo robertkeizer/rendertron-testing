@@ -49,7 +49,8 @@ export class Renderer {
     requestUrl: string,
     isMobile: boolean,
     timezoneId?: string,
-	upstreamAgent?: string
+	upstreamAgent?: string,
+	upstreamIp?: string
   ): Promise<SerializedResponse> {
     /**
      * Executed on the page after the page has loaded. Strips script and
@@ -94,8 +95,15 @@ export class Renderer {
 
     const page = await this.browser.newPage();
 
+	let headersToSet = this.config.reqHeaders;
+
 	if( upstreamAgent ){
-		page.setUserAgent(upstreamAgent);
+		//page.setUserAgent(upstreamAgent);
+		headersToSet["x-preferred-client-useragent"] = upstreamAgent;
+	}
+
+	if( upstreamIp ){
+		headersToSet["x-preferred-client-ip"] = upstreamIp;
 	}
 
     // Page may reload when setting isMobile
@@ -124,7 +132,7 @@ export class Renderer {
       }
     }
 
-    await page.setExtraHTTPHeaders(this.config.reqHeaders);
+    await page.setExtraHTTPHeaders(headersToSet);
 
     page.evaluateOnNewDocument('customElements.forcePolyfill = true');
     page.evaluateOnNewDocument('ShadyDOM = {force: true}');
@@ -133,6 +141,23 @@ export class Renderer {
     await page.setRequestInterception(true);
 
     page.on('request', (interceptedRequest: puppeteer.HTTPRequest) => {
+
+	// Overwrite the subsequent requests the page makes..
+	try{
+
+		let headerOverride: Record<string, string> = interceptedRequest.headers();
+		if( upstreamAgent ){
+			headerOverride['x-preferred-client-useragent'] = upstreamAgent;
+		}
+		if( upstreamIp ){
+			headerOverride['x-preferred-client-ip'] = upstreamIp;
+		}
+	}catch( err ){
+		console.log( "Couldn't set headers for requests internal to browser" );
+		console.log( err );
+	}
+
+
       if (this.restrictRequest(interceptedRequest.url())) {
         interceptedRequest.abort();
       } else {
